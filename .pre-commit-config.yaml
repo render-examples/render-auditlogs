@@ -1,0 +1,52 @@
+---
+default_stages: [pre-commit, manual]
+
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: check-added-large-files
+  - id: check-case-conflict
+  - id: check-merge-conflict
+  - id: check-symlinks
+  - id: check-vcs-permalinks
+  - id: detect-private-key
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+  - id: check-yaml
+  - id: check-json
+
+- repo: local
+  hooks:
+  - id: goimports
+    name: goimports
+    description: Runs goimports
+    entry: go run golang.org/x/tools/cmd/goimports@latest -local github.com/renderinc -w
+    language: system
+    files: '\.go$'
+    pass_filenames: true
+
+  - id: go-mod-tidy
+    name: go mod tidy
+    description: Runs go mod tidy
+    entry: go mod tidy
+    language: system
+    pass_filenames: false
+    files: '\.(go|mod|sum)$'
+
+  - id: go-vet
+    name: go vet
+    description: Runs go vet for static analysis
+    entry: go vet ./...
+    language: system
+    types: [go]
+    pass_filenames: false
+
+  - id: go-test
+    name: go test
+    description: Runs go test
+    entry: go test -v ./...
+    language: system
+    types: [go]
+    pass_filenames: false
+    stages: [pre-push, manual]

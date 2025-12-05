@@ -1,0 +1,57 @@
+---
+name: pre-commit
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+  workflow_dispatch:
+
+env:
+  GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+concurrency:
+  group: pre-commit-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  run-pre-commit:
+    runs-on: ubuntu-latest-m
+    steps:
+    - name: checkout
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      with:
+        ref: ${{ env.GIT_SHA }}
+
+    - name: get PR base commit
+      if: ${{ github.event_name == 'pull_request' }}
+      run: |
+        set -euxo pipefail
+        git fetch origin ${{ github.event.pull_request.base.sha }} --depth 1 --no-tags --prune
+
+    - name: Set up Python
+      uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+      with:
+        python-version: '3.x'
+
+    - name: Install pre-commit
+      run: pip install pre-commit
+
+    - name: Cache pre-commit
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+      with:
+        path: |
+          ~/.cache/pre-commit
+        key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+    - name: Run pre-commit
+      run: |
+        set -euxo pipefail
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          # For PRs, only run on changed files
+          pre-commit run --from-ref ${{ github.event.pull_request.base.sha }} --to-ref HEAD --show-diff-on-failure --hook-stage manual
+        else
+          # For pushes to master, run on all files
+          pre-commit run --all-files --show-diff-on-failure --hook-stage manual
+        fi
