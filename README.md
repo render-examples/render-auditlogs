@@ -5,6 +5,7 @@ Export [Render](https://render.com) audit logs to an AWS S3 bucket.
 ## Overview
 
 This project provides:
+
 - A Go application that fetches audit logs from the Render API and uploads them to S3
 - Terraform modules to deploy the infrastructure on both AWS and Render
 - Automatic scheduling via a Render Cron Job that runs every 15 minutes by default
@@ -24,7 +25,7 @@ Supports both workspace-level and organization-level (Enterprise) audit logs.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/renderinc/render-auditlogs.git
+git clone https://github.com/render-examples/render-auditlogs.git
 cd render-auditlogs/terraform
 ```
 
@@ -66,28 +67,30 @@ terraform apply \
 
 ## Terraform Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `aws_s3_bucket_name` | Yes | - | Name of the S3 bucket to create for storing audit logs |
-| `render_api_key` | Yes | - | Render API key for accessing audit logs |
-| `render_workspace_ids` | No | `[]` | List of workspace IDs to fetch audit logs from |
-| `render_organization_id` | No | `""` | Organization ID for Enterprise audit logs |
-| `aws_iam_user_name` | No | `render-audit-log-processor` | Name of the IAM user created for S3 access |
-| `render_cronjob_name` | No | `render-auditlogs` | Name of the Render Cron Job |
-| `render_cronjob_schedule` | No | `1/15 * * * *` | Cron schedule (default: every 15 minutes) |
-| `render_cronjob_plan` | No | `starter` | Render plan for the Cron Job |
-| `render_cronjob_region` | No | `oregon` | Region to deploy the Cron Job |
-| `render_project_name` | No | `audit-logs` | Name of the Render project |
+| Variable                  | Required | Default                      | Description                                            |
+| ------------------------- | -------- | ---------------------------- | ------------------------------------------------------ |
+| `aws_s3_bucket_name`      | Yes      | -                            | Name of the S3 bucket to create for storing audit logs |
+| `render_api_key`          | Yes      | -                            | Render API key for accessing audit logs                |
+| `render_workspace_ids`    | No       | `[]`                         | List of workspace IDs to fetch audit logs from         |
+| `render_organization_id`  | No       | `""`                         | Organization ID for Enterprise audit logs              |
+| `aws_iam_user_name`       | No       | `render-audit-log-processor` | Name of the IAM user created for S3 access             |
+| `render_cronjob_name`     | No       | `render-auditlogs`           | Name of the Render Cron Job                            |
+| `render_cronjob_schedule` | No       | `1/15 * * * *`               | Cron schedule (default: every 15 minutes)              |
+| `render_cronjob_plan`     | No       | `starter`                    | Render plan for the Cron Job                           |
+| `render_cronjob_region`   | No       | `oregon`                     | Region to deploy the Cron Job                          |
+| `render_project_name`     | No       | `audit-logs`                 | Name of the Render project                             |
 
 ## Architecture
 
 The Terraform configuration creates:
 
 **AWS Resources:**
+
 - S3 bucket (versioned, encrypted, public access blocked)
 - IAM user with S3 write permissions
 
 **Render Resources:**
+
 - Project
 - Cron Job (builds from this repo)
 
