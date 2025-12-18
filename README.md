@@ -67,18 +67,21 @@ terraform apply \
 
 ## Terraform Variables
 
-| Variable                  | Required | Default                      | Description                                            |
-| ------------------------- | -------- | ---------------------------- | ------------------------------------------------------ |
-| `aws_s3_bucket_name`      | Yes      | -                            | Name of the S3 bucket to create for storing audit logs |
-| `render_api_key`          | Yes      | -                            | Render API key for accessing audit logs                |
-| `render_workspace_ids`    | No       | `[]`                         | List of workspace IDs to fetch audit logs from         |
-| `render_organization_id`  | No       | `""`                         | Organization ID for Enterprise audit logs              |
-| `aws_iam_user_name`       | No       | `render-audit-log-processor` | Name of the IAM user created for S3 access             |
-| `render_cronjob_name`     | No       | `render-auditlogs`           | Name of the Render Cron Job                            |
-| `render_cronjob_schedule` | No       | `1/15 * * * *`               | Cron schedule (default: every 15 minutes)              |
-| `render_cronjob_plan`     | No       | `starter`                    | Render plan for the Cron Job                           |
-| `render_cronjob_region`   | No       | `oregon`                     | Region to deploy the Cron Job                          |
-| `render_project_name`     | No       | `audit-logs`                 | Name of the Render project                             |
+| Variable                    | Required | Default                      | Description                                            |
+| --------------------------- | -------- | ---------------------------- | ------------------------------------------------------ |
+| `aws_s3_bucket_name`        | Yes      | -                            | Name of the S3 bucket to create for storing audit logs |
+| `render_api_key`            | Yes      | -                            | Render API key for accessing audit logs                |
+| `render_workspace_ids`      | No       | `[]`                         | List of workspace IDs to fetch audit logs from         |
+| `render_organization_id`    | No       | `""`                         | Organization ID for Enterprise audit logs              |
+| `aws_iam_user_name`         | No       | `render-audit-log-processor` | Name of the IAM user created for S3 access             |
+| `aws_s3_bucket_key_enabled` | No       | `false`                      | Enable S3 bucket key to reduce KMS calls               |
+| `aws_s3_kms_key_id`         | No       | `""`                         | ARN for KMS key to use for encryption                  |
+| `aws_s3_use_kms`            | No       | `false`                      | Use KMS for encryption (instead of SSE-S3)             |
+| `render_cronjob_name`       | No       | `render-auditlogs`           | Name of the Render Cron Job                            |
+| `render_cronjob_schedule`   | No       | `1/15 * * * *`               | Cron schedule (default: every 15 minutes)              |
+| `render_cronjob_plan`       | No       | `starter`                    | Render plan for the Cron Job                           |
+| `render_cronjob_region`     | No       | `oregon`                     | Region to deploy the Cron Job                          |
+| `render_project_name`       | No       | `audit-logs`                 | Name of the Render project                             |
 
 ## Architecture
 
