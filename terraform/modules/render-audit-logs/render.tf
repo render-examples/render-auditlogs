@@ -11,7 +11,7 @@ resource "render_cron_job" "render-audit-logs" {
       auto_deploy   = true
       branch        = "main"
       build_command = "go build -tags netgo -ldflags '-s -w' -o render-auditlogs"
-      repo_url = "https://github.com/renderinc/render-auditlogs"
+      repo_url = "https://github.com/render-examples/render-auditlogs"
       runtime  = "go"
     }
   }

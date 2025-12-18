@@ -20,13 +20,13 @@ variable "aws_region" {
 variable "render_organization_id" {
     type = string
     default = ""
-    description = "Render organization id (enterprise only)"
+    description = "Render organization ID (enterprise only)"
 }
 
 variable "render_workspace_ids" {
   type = list(string)
   default = []
-  description = "Command seperated string of Render workspace ids"
+  description = "List of Render workspace IDs"
 }
 
 variable "render_api_key" {
