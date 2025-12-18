@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/stretchr/testify/require"
 
 	"github.com/renderinc/render-auditlogs/pkg/auditlogs"
@@ -107,5 +108,101 @@ func TestUploadAuditLogs(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "error uploading to S3")
 		require.Empty(t, s3URI)
+	})
+
+	t.Run("uses default SSE-S3 encryption when KMS not enabled", func(t *testing.T) {
+		t.Parallel()
+		s3Client := &mockS3Client{
+			putObjectFunc: func(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
+				require.Equal(t, "test-bucket", *params.Bucket)
+				require.Equal(t, types.ServerSideEncryptionAes256, params.ServerSideEncryption)
+				require.Nil(t, params.SSEKMSKeyId)
+				require.Nil(t, params.BucketKeyEnabled)
+				return &s3.PutObjectOutput{}, nil
+			},
+		}
+
+		uploader, err := aws.NewUploaderWithOptions(ctx, s3Client, "test-bucket", "test-region", aws.UploaderOptions{
+			UseKMS: false,
+		})
+		require.NoError(t, err)
+
+		s3URI, err := uploader.UploadAuditLogs(ctx, auditlogs.WorkspaceAuditLog, "workspace-123", testData)
+
+		require.NoError(t, err)
+		require.NotEmpty(t, s3URI)
+	})
+
+	t.Run("uses KMS encryption without specific key ID", func(t *testing.T) {
+		t.Parallel()
+		s3Client := &mockS3Client{
+			putObjectFunc: func(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
+				require.Equal(t, "test-bucket", *params.Bucket)
+				require.Equal(t, types.ServerSideEncryptionAwsKms, params.ServerSideEncryption)
+				require.Nil(t, params.SSEKMSKeyId)
+				require.Nil(t, params.BucketKeyEnabled)
+				return &s3.PutObjectOutput{}, nil
+			},
+		}
+
+		uploader, err := aws.NewUploaderWithOptions(ctx, s3Client, "test-bucket", "test-region", aws.UploaderOptions{
+			UseKMS: true,
+		})
+		require.NoError(t, err)
+
+		s3URI, err := uploader.UploadAuditLogs(ctx, auditlogs.WorkspaceAuditLog, "workspace-123", testData)
+
+		require.NoError(t, err)
+		require.NotEmpty(t, s3URI)
+	})
+
+	t.Run("uses KMS encryption with specific key ID", func(t *testing.T) {
+		t.Parallel()
+		s3Client := &mockS3Client{
+			putObjectFunc: func(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
+				require.Equal(t, "test-bucket", *params.Bucket)
+				require.Equal(t, types.ServerSideEncryptionAwsKms, params.ServerSideEncryption)
+				require.NotNil(t, params.SSEKMSKeyId)
+				require.Equal(t, "arn:aws:kms:us-west-2:123456789012:key/12345678-1234-1234-1234-123456789012", *params.SSEKMSKeyId)
+				require.Nil(t, params.BucketKeyEnabled)
+				return &s3.PutObjectOutput{}, nil
+			},
+		}
+
+		uploader, err := aws.NewUploaderWithOptions(ctx, s3Client, "test-bucket", "test-region", aws.UploaderOptions{
+			UseKMS:   true,
+			KMSKeyID: "arn:aws:kms:us-west-2:123456789012:key/12345678-1234-1234-1234-123456789012",
+		})
+		require.NoError(t, err)
+
+		s3URI, err := uploader.UploadAuditLogs(ctx, auditlogs.WorkspaceAuditLog, "workspace-123", testData)
+
+		require.NoError(t, err)
+		require.NotEmpty(t, s3URI)
+	})
+
+	t.Run("uses KMS encryption with bucket key enabled", func(t *testing.T) {
+		t.Parallel()
+		s3Client := &mockS3Client{
+			putObjectFunc: func(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
+				require.Equal(t, "test-bucket", *params.Bucket)
+				require.Equal(t, types.ServerSideEncryptionAwsKms, params.ServerSideEncryption)
+				require.Nil(t, params.SSEKMSKeyId)
+				require.NotNil(t, params.BucketKeyEnabled)
+				require.True(t, *params.BucketKeyEnabled)
+				return &s3.PutObjectOutput{}, nil
+			},
+		}
+
+		uploader, err := aws.NewUploaderWithOptions(ctx, s3Client, "test-bucket", "test-region", aws.UploaderOptions{
+			UseKMS:           true,
+			BucketKeyEnabled: true,
+		})
+		require.NoError(t, err)
+
+		s3URI, err := uploader.UploadAuditLogs(ctx, auditlogs.WorkspaceAuditLog, "workspace-123", testData)
+
+		require.NoError(t, err)
+		require.NotEmpty(t, s3URI)
 	})
 }

@@ -105,6 +105,11 @@ RENDER_API_KEY=your-api-key
 AWS_ACCESS_KEY_ID=your-aws-key
 AWS_SECRET_ACCESS_KEY=your-aws-secret
 AWS_REGION=us-west-2
+
+# Optional: KMS encryption settings (defaults to SSE-S3 if not set)
+S3_USE_KMS=true
+S3_KMS_KEY_ID=arn:aws:kms:us-west-2:123456789012:key/your-key-id  # Optional
+S3_BUCKET_KEY_ENABLED=true  # Optional
 ```
 
 2. Run the application:

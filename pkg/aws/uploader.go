@@ -21,15 +21,27 @@ type S3Client interface {
 	PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
 }
 
+type UploaderOptions struct {
+	UseKMS           bool
+	KMSKeyID         string
+	BucketKeyEnabled bool
+}
+
 type Uploader struct {
 	client S3Client
 	bucket string
+	opts   UploaderOptions
 }
 
 func NewUploader(ctx context.Context, client S3Client, bucket, region string) (*Uploader, error) {
+	return NewUploaderWithOptions(ctx, client, bucket, region, UploaderOptions{})
+}
+
+func NewUploaderWithOptions(ctx context.Context, client S3Client, bucket, region string, opts UploaderOptions) (*Uploader, error) {
 	return &Uploader{
 		client: client,
 		bucket: bucket,
+		opts:   opts,
 	}, nil
 }
 
@@ -56,13 +68,28 @@ func (u *Uploader) UploadAuditLogs(ctx context.Context, auditLogType auditlogs.L
 	key := generateS3Key(auditLogType, id, data[0].AuditLog.Timestamp)
 
 	// Upload to S3
-	_, err = u.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:               aws.String(u.bucket),
-		Key:                  aws.String(key),
-		Body:                 bytes.NewReader(compressedData.Bytes()),
-		ContentType:          aws.String("application/gzip"),
-		ServerSideEncryption: types.ServerSideEncryptionAes256,
-	})
+	putInput := &s3.PutObjectInput{
+		Bucket:      aws.String(u.bucket),
+		Key:         aws.String(key),
+		Body:        bytes.NewReader(compressedData.Bytes()),
+		ContentType: aws.String("application/gzip"),
+	}
+
+	// Configure server-side encryption
+	if u.opts.UseKMS {
+		putInput.ServerSideEncryption = types.ServerSideEncryptionAwsKms
+		if u.opts.KMSKeyID != "" {
+			putInput.SSEKMSKeyId = aws.String(u.opts.KMSKeyID)
+		}
+		if u.opts.BucketKeyEnabled {
+			putInput.BucketKeyEnabled = aws.Bool(true)
+		}
+	} else {
+		// Default to SSE-S3 (AES256)
+		putInput.ServerSideEncryption = types.ServerSideEncryptionAes256
+	}
+
+	_, err = u.client.PutObject(ctx, putInput)
 	if err != nil {
 		return "", fmt.Errorf("error uploading to S3: %w", err)
 	}

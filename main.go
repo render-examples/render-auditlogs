@@ -30,7 +30,11 @@ func main() {
 	}
 
 	// Create S3 uploader
-	uploader, err := aws.NewUploader(ctx, s3.NewFromConfig(cfg.AWSConfig), cfg.S3Bucket, cfg.AWSRegion)
+	uploader, err := aws.NewUploaderWithOptions(ctx, s3.NewFromConfig(cfg.AWSConfig), cfg.S3Bucket, cfg.AWSRegion, aws.UploaderOptions{
+		UseKMS:           cfg.S3UseKMS,
+		KMSKeyID:         cfg.S3KMSKeyID,
+		BucketKeyEnabled: cfg.S3BucketKeyEnabled,
+	})
 	if err != nil {
 		log.Fatal("Error creating S3 uploader:", err)
 	}

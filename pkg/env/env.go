@@ -16,6 +16,9 @@ type Config struct {
 	WorkspaceIDS       []string `required:"true" split_words:"true"`
 	OrganizationID     string   `required:"false" split_words:"true"`
 	S3Bucket           string   `required:"true" split_words:"true"`
+	S3BucketKeyEnabled bool   `required:"false" split_words:"true"`
+	S3KMSKeyID         string `required:"false" split_words:"true"`
+	S3UseKMS           bool   `required:"false" split_words:"true"`
 	RenderAPIKey       string   `required:"true" split_words:"true"`
 	AWSAccessKeyID     string   `required:"true" split_words:"true"`
 	AWSSecretAccessKey string   `required:"true" split_words:"true"`
