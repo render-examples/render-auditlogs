@@ -49,7 +49,14 @@ resource "aws_s3_bucket_policy" "render_audit_logs" {
           Principal = "*",
           Action = "s3:PutObject",
           Resource = "arn:aws:s3:::${aws_s3_bucket.render_audit_logs.id}/*",
-          Condition = {
+          Condition = var.aws_s3_use_kms ? {
+            StringEquals = {
+              "s3:x-amz-server-side-encryption" = "aws:kms"
+            },
+            Null = {
+              "s3:x-amz-server-side-encryption-aws-kms-key-id" = "true"
+            }
+          } : {
             StringNotEquals = {
               "s3:x-amz-server-side-encryption" = "AES256"
             }
