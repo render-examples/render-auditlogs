@@ -4,6 +4,7 @@ module "aws" {
 
   aws_s3_bucket_name = var.aws_s3_bucket_name
   aws_iam_user_name = var.aws_iam_user_name
+  aws_s3_use_kms = var.aws_s3_use_kms
 }
 
 module "render" {

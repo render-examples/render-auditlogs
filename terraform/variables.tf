@@ -2,11 +2,25 @@ variable "aws_s3_bucket_name" {
     type = string
 }
 
+variable "aws_s3_bucket_key_enabled" {
+  type = bool
+  default = false
+}
+
+variable "aws_s3_kms_key_id" {
+  type = string
+  default = ""
+}
+
+variable "aws_s3_use_kms" {
+  type = bool
+  default = false
+}
+
 variable "aws_iam_user_name" {
   type = string
   default = "render-audit-log-processor"
 }
-
 
 variable "render_api_key" {
   type = string

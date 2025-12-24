@@ -158,6 +158,38 @@ func TestSaveCheckpoint(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("uses KMS with key ID and bucket key enabled", func(t *testing.T) {
+		checkpoint := &awspkg.Checkpoint{
+			LastCursor:    "kms-cursor",
+			LastTimestamp: testTime,
+		}
+
+		const kmsKey = "arn:aws:kms:us-west-2:123456789012:key/abcdefab-1234-5678-9abc-def012345678"
+
+		s3Client := &mockS3Client{
+			putObjectFunc: func(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
+				require.Equal(t, "test-bucket", *params.Bucket)
+				require.Equal(t, "workspace=test-workspace/checkpoint.json", *params.Key)
+				require.Equal(t, types.ServerSideEncryptionAwsKms, params.ServerSideEncryption)
+				require.NotNil(t, params.SSEKMSKeyId)
+				require.Equal(t, kmsKey, *params.SSEKMSKeyId)
+				require.NotNil(t, params.BucketKeyEnabled)
+				require.True(t, *params.BucketKeyEnabled)
+				return &s3.PutObjectOutput{}, nil
+			},
+		}
+
+		uploader, err := awspkg.NewUploaderWithOptions(ctx, s3Client, "test-bucket", "test-region", awspkg.UploaderOptions{
+			UseKMS:           true,
+			KMSKeyID:         kmsKey,
+			BucketKeyEnabled: true,
+		})
+		require.NoError(t, err)
+
+		err = uploader.SaveCheckpoint(ctx, checkpoint, auditlogs.WorkspaceAuditLog, "test-workspace")
+		require.NoError(t, err)
+	})
+
 	t.Run("returns error on S3 error", func(t *testing.T) {
 		checkpoint := &awspkg.Checkpoint{
 			LastCursor:    "test-cursor",
