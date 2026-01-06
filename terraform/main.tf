@@ -13,6 +13,9 @@ module "render" {
   aws_access_key = module.aws.aws_access_key
   aws_secret_access_key = module.aws.aws_secret_access_key
   aws_s3_bucket_name = var.aws_s3_bucket_name
+  aws_s3_bucket_key_enabled = var.aws_s3_bucket_key_enabled
+  aws_s3_kms_key_id = var.aws_s3_kms_key_id
+  aws_s3_use_kms = var.aws_s3_use_kms
 
   render_api_key = var.render_api_key
   render_organization_id = var.render_organization_id
