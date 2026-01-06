@@ -27,6 +27,9 @@ resource "render_cron_job" "render-audit-logs" {
     "WORKSPACE_IDS" = { value = join(",", var.render_workspace_ids) }
     "RENDER_API_KEY" = { value = var.render_api_key }
     "S3_BUCKET" = { value = var.aws_s3_bucket_name }
+    "S3_BUCKET_KEY_ENABLED" = { value = var.aws_s3_bucket_key_enabled }
+    "S3_KMS_KEY_ID" = { value = var.aws_s3_kms_key_id }
+    "S3_USE_KMS" = { value = var.aws_s3_use_kms }
   }
 }
 

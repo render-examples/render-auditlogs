@@ -60,13 +60,27 @@ func (u *Uploader) SaveCheckpoint(ctx context.Context, cp *Checkpoint, logType a
 		return fmt.Errorf("error marshaling checkpoint: %w", err)
 	}
 
-	_, err = u.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:               aws.String(u.bucket),
-		Key:                  aws.String(fmt.Sprintf("%s=%s/%s", logType, workspace, checkpointKey)),
-		Body:                 bytes.NewReader(data),
-		ContentType:          aws.String("application/json"),
-		ServerSideEncryption: types.ServerSideEncryptionAes256,
-	})
+	putInput := &s3.PutObjectInput{
+		Bucket:      aws.String(u.bucket),
+		Key:         aws.String(fmt.Sprintf("%s=%s/%s", logType, workspace, checkpointKey)),
+		Body:        bytes.NewReader(data),
+		ContentType: aws.String("application/json"),
+	}
+
+	// Configure server-side encryption
+	if u.opts.UseKMS {
+		putInput.ServerSideEncryption = types.ServerSideEncryptionAwsKms
+		if u.opts.KMSKeyID != "" {
+			putInput.SSEKMSKeyId = aws.String(u.opts.KMSKeyID)
+		}
+		if u.opts.BucketKeyEnabled {
+			putInput.BucketKeyEnabled = aws.Bool(true)
+		}
+	} else {
+		putInput.ServerSideEncryption = types.ServerSideEncryptionAes256
+	}
+
+	_, err = u.client.PutObject(ctx, putInput)
 	if err != nil {
 		return fmt.Errorf("error writing checkpoint to S3: %w", err)
 	}
