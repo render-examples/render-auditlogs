@@ -15,7 +15,9 @@ Supports both workspace-level and organization-level (Enterprise) audit logs.
 ## Prerequisites
 
 - Render workspace on Organization or Enterprise plan
-- [Render API Key](https://dashboard.render.com/u/settings) (create from Account Settings)
+- [Render API Key](https://dashboard.render.com/u/settings) (create from Account Settings). The Render API key must be a User account which is:
+  - An Admin in every Workspace that will be tracked
+  - An Owner of the Oranization (Enterprise Plan)
 - Render Owner ID (`tea-xxx`) — workspace where the Cron Job will be deployed
 - [Terraform](https://www.terraform.io/downloads) >= 1.0
 - AWS account with permissions to create S3 buckets and IAM users
