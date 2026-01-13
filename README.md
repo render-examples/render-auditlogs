@@ -85,6 +85,33 @@ terraform apply \
 | `render_cronjob_region`     | No       | `oregon`                     | Region to deploy the Cron Job                          |
 | `render_project_name`       | No       | `audit-logs`                 | Name of the Render project                             |
 
+*Note*: If you use a KMS key, confirm that the AWS IAM User is setup with the User Permissions for the key.
+
+Example:
+```
+{
+	"Version": "2012-10-17",
+	"Id": "default",
+	"Statement": [
+		{
+			"Sid": "Allow use of the key",
+			"Effect": "Allow",
+			"Principal": {
+				"AWS": "arn:aws:iam::12345:user/render-audit-log-processor"
+			},
+			"Action": [
+				"kms:Encrypt",
+				"kms:Decrypt",
+				"kms:ReEncrypt*",
+				"kms:GenerateDataKey*",
+				"kms:DescribeKey"
+			],
+			"Resource": "*"
+		}
+	]
+}
+```
+
 ## Architecture
 
 The Terraform configuration creates:
