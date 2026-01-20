@@ -15,7 +15,9 @@ Supports both workspace-level and organization-level (Enterprise) audit logs.
 ## Prerequisites
 
 - Render workspace on Organization or Enterprise plan
-- [Render API Key](https://dashboard.render.com/u/settings) (create from Account Settings)
+- [Render API Key](https://dashboard.render.com/u/settings) (create from Account Settings). The Render API key must be a User account which is:
+  - An Admin in every Workspace that will be tracked
+  - An Owner of the Oranization (Enterprise Plan)
 - Render Owner ID (`tea-xxx`) — workspace where the Cron Job will be deployed
 - [Terraform](https://www.terraform.io/downloads) >= 1.0
 - AWS account with permissions to create S3 buckets and IAM users
@@ -82,6 +84,33 @@ terraform apply \
 | `render_cronjob_plan`       | No       | `starter`                    | Render plan for the Cron Job                           |
 | `render_cronjob_region`     | No       | `oregon`                     | Region to deploy the Cron Job                          |
 | `render_project_name`       | No       | `audit-logs`                 | Name of the Render project                             |
+
+*Note*: If you use a KMS key, confirm that the AWS IAM User is setup with the User Permissions for the key.
+
+Example:
+```
+{
+	"Version": "2012-10-17",
+	"Id": "default",
+	"Statement": [
+		{
+			"Sid": "Allow use of the key",
+			"Effect": "Allow",
+			"Principal": {
+				"AWS": "arn:aws:iam::12345:user/render-audit-log-processor"
+			},
+			"Action": [
+				"kms:Encrypt",
+				"kms:Decrypt",
+				"kms:ReEncrypt*",
+				"kms:GenerateDataKey*",
+				"kms:DescribeKey"
+			],
+			"Resource": "*"
+		}
+	]
+}
+```
 
 ## Architecture
 
