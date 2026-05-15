@@ -1,4 +1,11 @@
 
+locals {
+  # Computed from inputs (no reference to aws_iam_role) so the cron job does not
+  # depend on the role resource; the role's trust policy can then reference this
+  # cron job's service ID without creating a cycle.
+  computed_aws_role_arn = "arn:aws:iam::${var.aws_account_id}:role/${var.aws_iam_role_name}"
+}
+
 resource "render_cron_job" "render-audit-logs" {
   name               = var.render_cronjob_name
   plan               = var.render_cronjob_plan
@@ -20,8 +27,11 @@ resource "render_cron_job" "render-audit-logs" {
 
   env_vars = {
     "LOCAL" = { value = "false" },
-    "AWS_ACCESS_KEY_ID" = {value = var.aws_access_key},
-    "AWS_SECRET_ACCESS_KEY" = {value = var.aws_secret_access_key}
+    "AWS_ROLE_ARN" = { value = local.computed_aws_role_arn }
+    # To use an IAM user access key instead of OIDC, create the user manually,
+    # set these in the Render dashboard, and clear AWS_ROLE_ARN:
+    # "AWS_ACCESS_KEY_ID" = { value = "..." }
+    # "AWS_SECRET_ACCESS_KEY" = { value = "..." }
     "AWS_REGION" = {value = var.aws_region}
     "ORGANIZATION_ID" = {value = var.render_organization_id}
     "WORKSPACE_IDS" = { value = join(",", var.render_workspace_ids) }
@@ -41,4 +51,8 @@ resource "render_project" "audit-logs" {
       protected_status : "protected"
     },
   }
+}
+
+output "cron_job_service_id" {
+  value = render_cron_job.render-audit-logs.id
 }

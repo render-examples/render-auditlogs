@@ -17,9 +17,21 @@ variable "aws_s3_use_kms" {
   default = false
 }
 
-variable "aws_iam_user_name" {
+variable "aws_iam_role_name" {
   type = string
   default = "render-audit-log-processor"
+  description = "Name of the IAM role the Cron Job assumes via OIDC"
+}
+
+variable "render_deployment_workspace_id" {
+  type = string
+  description = "Render workspace ID (tea-xxx) where the Cron Job is deployed; used to build the OIDC issuer URL (oidc.render.com/<workspace-id>)"
+}
+
+variable "aws_oidc_provider_arn" {
+  type = string
+  default = ""
+  description = "ARN of an existing AWS IAM OIDC provider for Render. If empty, one is created."
 }
 
 variable "render_api_key" {

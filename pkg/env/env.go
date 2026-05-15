@@ -6,6 +6,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 
@@ -20,9 +22,11 @@ type Config struct {
 	S3KMSKeyID         string   `required:"false" split_words:"true"`
 	S3UseKMS           bool     `required:"false" split_words:"true"`
 	RenderAPIKey       string   `required:"true" split_words:"true"`
-	AWSAccessKeyID     string   `required:"true" split_words:"true"`
-	AWSSecretAccessKey string   `required:"true" split_words:"true"`
 	AWSRegion          string   `required:"true" split_words:"true"`
+
+	// If AWSRoleARN is empty, the AWS SDK falls back to access keys from the environment
+	AWSRoleARN              string `required:"false" split_words:"true"`
+	AWSWebIdentityTokenFile string `required:"false" split_words:"true" default:"/var/lib/render/oidc/aws.jwt"`
 
 	AWSConfig aws.Config
 }
@@ -43,6 +47,14 @@ func LoadConfig(ctx context.Context, config *Config) error {
 	awscfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(config.AWSRegion))
 	if err != nil {
 		return err
+	}
+
+	if config.AWSRoleARN != "" {
+		awscfg.Credentials = aws.NewCredentialsCache(stscreds.NewWebIdentityRoleProvider(
+			sts.NewFromConfig(awscfg),
+			config.AWSRoleARN,
+			stscreds.IdentityTokenFile(config.AWSWebIdentityTokenFile),
+		))
 	}
 
 	config.AWSConfig = awscfg

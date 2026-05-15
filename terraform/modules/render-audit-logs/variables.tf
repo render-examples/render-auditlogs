@@ -17,14 +17,14 @@ variable "aws_s3_use_kms" {
   default = false
 }
 
-variable "aws_access_key" {
+variable "aws_account_id" {
   type = string
-  sensitive = true
+  description = "AWS account ID; used to construct the IAM role ARN the cron job assumes via OIDC"
 }
 
-variable "aws_secret_access_key" {
+variable "aws_iam_role_name" {
   type = string
-  sensitive = true
+  default = "render-audit-log-processor"
 }
 
 variable "aws_region" {
