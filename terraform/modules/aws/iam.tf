@@ -33,7 +33,7 @@ data "aws_iam_policy_document" "assume_role_with_oidc" {
     condition {
       test     = "StringLike"
       variable = "${local.issuer_host}/${var.render_deployment_workspace_id}:sub"
-      values   = ["workspace:${var.render_deployment_workspace_id}:env:*:service:${var.render_cron_job_service_id}"]
+      values   = ["workspace:${var.render_deployment_workspace_id}:environment:*:service:${var.render_cron_job_service_id}"]
     }
   }
 }
