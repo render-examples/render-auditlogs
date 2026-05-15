@@ -24,9 +24,11 @@ type Config struct {
 	RenderAPIKey       string   `required:"true" split_words:"true"`
 	AWSRegion          string   `required:"true" split_words:"true"`
 
-	// If AWSRoleARN is empty, the AWS SDK falls back to access keys from the environment
-	AWSRoleARN              string `required:"false" split_words:"true"`
-	AWSWebIdentityTokenFile string `required:"false" split_words:"true" default:"/var/lib/render/oidc/aws.jwt"`
+	// If AWSWebIdentityTokenFile is set, OIDC is used. Otherwise the AWS SDK's
+	// default credential chain falls back to AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY.
+	AWSRoleARN string `required:"false" split_words:"true"`
+	// variable is auto-set by Render when OIDC is enabled.
+	AWSWebIdentityTokenFile string `required:"false" split_words:"true"`
 
 	AWSConfig aws.Config
 }
@@ -49,7 +51,8 @@ func LoadConfig(ctx context.Context, config *Config) error {
 		return err
 	}
 
-	if config.AWSRoleARN != "" {
+	if config.AWSWebIdentityTokenFile != "" {
+		logger.FromContext(ctx).Info("Using OIDC authentication")
 		awscfg.Credentials = aws.NewCredentialsCache(stscreds.NewWebIdentityRoleProvider(
 			sts.NewFromConfig(awscfg),
 			config.AWSRoleARN,
