@@ -19,7 +19,6 @@ variable "aws_s3_use_kms" {
 
 variable "aws_account_id" {
   type = string
-  description = "AWS account ID; used to construct the IAM role ARN the cron job assumes via OIDC"
 }
 
 variable "aws_iam_role_name" {

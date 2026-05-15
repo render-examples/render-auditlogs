@@ -1,8 +1,5 @@
 
 locals {
-  # Computed from inputs (no reference to aws_iam_role) so the cron job does not
-  # depend on the role resource; the role's trust policy can then reference this
-  # cron job's service ID without creating a cycle.
   computed_aws_role_arn = "arn:aws:iam::${var.aws_account_id}:role/${var.aws_iam_role_name}"
 }
 
