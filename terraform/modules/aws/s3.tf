@@ -31,7 +31,7 @@ resource "aws_s3_bucket_policy" "render_audit_logs" {
         Sid = "AllowAuditLogUpload",
         Effect = "Allow",
         Principal = {
-          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/render-audit-log-processor"
+          AWS = aws_iam_role.log_processor.arn
         },
         Action = [
           "s3:ListBucket",

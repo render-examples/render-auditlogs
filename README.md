@@ -20,7 +20,13 @@ Supports both workspace-level and organization-level (Enterprise) audit logs.
   - An Owner of the Oranization (Enterprise Plan)
 - Render Owner ID (`tea-xxx`) — workspace where the Cron Job will be deployed
 - [Terraform](https://www.terraform.io/downloads) >= 1.0
-- AWS account with permissions to create S3 buckets and IAM users
+- AWS account with permissions to create S3 buckets and IAM roles
+
+## AWS Authentication
+
+The Cron Job authenticates to AWS via [Render OIDC](https://render.com/docs/oidc) (currently in alpha): it exchanges a short-lived token for AWS credentials by assuming an IAM role. No long-lived secrets are stored. Render publishes a per-workspace OIDC issuer at `https://oidc.render.com/<render_deployment_workspace_id>`.
+
+The Go application also supports long-lived `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` credentials as a fallback (if `AWS_ROLE_ARN` is unset.
 
 ## Quick Start
 
@@ -33,7 +39,7 @@ cd render-auditlogs/terraform
 
 ### 2. Configure authentication
 
-Set up authentication for both providers:
+Set up authentication for both providers for the Terraform providers:
 
 ```bash
 # AWS - use one of these methods:
@@ -57,35 +63,37 @@ terraform apply \
   -var='render_workspace_ids=["tea-xxxxx", "tea-yyyyy"]'
 ```
 
-For Enterprise customers with organization-level audit logs:
+This creates an IAM OIDC provider for `https://oidc.render.com/<render_deployment_workspace_id>` (if one does not already exist) and an IAM role the Cron Job assumes at runtime.
+
+If you already have the OIDC provider registered in AWS add:
 
 ```bash
-terraform apply \
-  -var="aws_s3_bucket_name=your-audit-logs-bucket" \
-  -var="render_api_key=${RENDER_API_KEY}" \
-  -var="render_organization_id=org-xxxxx" \
-  -var='render_workspace_ids=["tea-xxxxx", "tea-yyyyy"]'
+  -var="aws_oidc_provider_arn=arn:aws:iam::123456789012:oidc-provider/oidc.render.com/tea-xxxxx"
 ```
+
+For Enterprise customers with organization-level audit logs, add `-var="render_organization_id=org-xxxxx"`.
 
 ## Terraform Variables
 
-| Variable                    | Required | Default                      | Description                                            |
-| --------------------------- | -------- | ---------------------------- | ------------------------------------------------------ |
-| `aws_s3_bucket_name`        | Yes      | -                            | Name of the S3 bucket to create for storing audit logs |
-| `render_api_key`            | Yes      | -                            | Render API key for accessing audit logs                |
-| `render_workspace_ids`      | No       | `[]`                         | List of workspace IDs to fetch audit logs from         |
-| `render_organization_id`    | No       | `""`                         | Organization ID for Enterprise audit logs              |
-| `aws_iam_user_name`         | No       | `render-audit-log-processor` | Name of the IAM user created for S3 access             |
-| `aws_s3_bucket_key_enabled` | No       | `false`                      | Enable S3 bucket key to reduce KMS calls               |
-| `aws_s3_kms_key_id`         | No       | `""`                         | ARN for KMS key to use for encryption                  |
-| `aws_s3_use_kms`            | No       | `false`                      | Use KMS for encryption (instead of SSE-S3)             |
-| `render_cronjob_name`       | No       | `render-auditlogs`           | Name of the Render Cron Job                            |
-| `render_cronjob_schedule`   | No       | `1/15 * * * *`               | Cron schedule (default: every 15 minutes)              |
-| `render_cronjob_plan`       | No       | `starter`                    | Render plan for the Cron Job                           |
-| `render_cronjob_region`     | No       | `oregon`                     | Region to deploy the Cron Job                          |
-| `render_project_name`       | No       | `audit-logs`                 | Name of the Render project                             |
+| Variable                    | Required | Default                      | Description                                                                                        |
+| --------------------------- | -------- | ---------------------------- | -------------------------------------------------------------------------------------------------- |
+| `aws_s3_bucket_name`        | Yes      | -                            | Name of the S3 bucket to create for storing audit logs                                             |
+| `render_api_key`            | Yes      | -                            | Render API key for accessing audit logs                                                            |
+| `render_deployment_workspace_id` | Yes | -                            | Render workspace ID (`tea-xxx`) where the Cron Job is deployed; used to build the OIDC issuer URL `oidc.render.com/<render_deployment_workspace_id>` |
+| `render_workspace_ids`      | No       | `[]`                         | List of workspace IDs to fetch audit logs from                                                     |
+| `render_organization_id`    | No       | `""`                         | Organization ID for Enterprise audit logs                                                          |
+| `aws_oidc_provider_arn`     | No       | `""`                         | ARN of an existing AWS IAM OIDC provider; if empty, one is created                                 |
+| `aws_iam_role_name`         | No       | `render-audit-log-processor` | Name of the IAM role the Cron Job assumes                                                          |
+| `aws_s3_bucket_key_enabled` | No       | `false`                      | Enable S3 bucket key to reduce KMS calls                                                           |
+| `aws_s3_kms_key_id`         | No       | `""`                         | ARN for KMS key to use for encryption                                                              |
+| `aws_s3_use_kms`            | No       | `false`                      | Use KMS for encryption (instead of SSE-S3)                                                         |
+| `render_cronjob_name`       | No       | `render-auditlogs`           | Name of the Render Cron Job                                                                        |
+| `render_cronjob_schedule`   | No       | `1/15 * * * *`               | Cron schedule (default: every 15 minutes)                                                          |
+| `render_cronjob_plan`       | No       | `starter`                    | Render plan for the Cron Job                                                                       |
+| `render_cronjob_region`     | No       | `oregon`                     | Region to deploy the Cron Job                                                                      |
+| `render_project_name`       | No       | `audit-logs`                 | Name of the Render project                                                                         |
 
-*Note*: If you use a KMS key, confirm that the AWS IAM User is setup with the User Permissions for the key.
+*Note*: If you use a KMS key, confirm that the IAM role is set up with User Permissions for the key.
 
 Example:
 ```
@@ -97,7 +105,7 @@ Example:
 			"Sid": "Allow use of the key",
 			"Effect": "Allow",
 			"Principal": {
-				"AWS": "arn:aws:iam::12345:user/render-audit-log-processor"
+				"AWS": "arn:aws:iam::123456789012:role/render-audit-log-processor"
 			},
 			"Action": [
 				"kms:Encrypt",
@@ -119,7 +127,8 @@ The Terraform configuration creates:
 **AWS Resources:**
 
 - S3 bucket (versioned, encrypted, public access blocked)
-- IAM user with S3 write permissions
+- IAM role with S3 write permissions and an OIDC trust policy scoped to this Cron Job's service ID
+- IAM OIDC provider for `oidc.render.com/<render_deployment_workspace_id>` (skipped when `aws_oidc_provider_arn` is set)
 
 **Render Resources:**
 
@@ -146,6 +155,8 @@ S3_USE_KMS=true
 S3_KMS_KEY_ID=arn:aws:kms:us-west-2:123456789012:key/your-key-id  # Optional
 S3_BUCKET_KEY_ENABLED=true  # Optional
 ```
+
+When `AWS_ROLE_ARN` is set, the application assumes that role via web-identity federation. When it is empty, the AWS SDK's default credential chain picks up `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (or your local AWS profile).
 
 2. Run the application:
 
