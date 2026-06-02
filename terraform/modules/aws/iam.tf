@@ -11,7 +11,6 @@ resource "aws_iam_openid_connect_provider" "render" {
 
   url             = local.issuer_url
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = []
 }
 
 data "aws_iam_policy_document" "assume_role_with_oidc" {
