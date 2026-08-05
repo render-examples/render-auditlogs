@@ -61,7 +61,22 @@ resource "aws_s3_bucket_policy" "render_audit_logs" {
               "s3:x-amz-server-side-encryption" = "AES256"
             }
           }
+        },
+      {
+        Sid       = "Block unencrypted requests",
+        Effect    = "Deny",
+        Principal = "*",
+        Action    = "s3:*",
+        Resource = [
+          "arn:aws:s3:::${aws_s3_bucket.render_audit_logs.id}",
+          "arn:aws:s3:::${aws_s3_bucket.render_audit_logs.id}/*",
+        ],
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
+          }
         }
+      },
 
     ],
   })
