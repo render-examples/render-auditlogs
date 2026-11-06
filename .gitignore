@@ -1,6 +1,5 @@
 .DS_Store
 .env
-panther-logs-render/
 
 # Terraform files
 **/.terraform/

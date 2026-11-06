@@ -15,9 +15,13 @@ Supports both workspace-level and organization-level (Enterprise) audit logs.
 ## Prerequisites
 
 - Render workspace on Organization or Enterprise plan
-- [Render API Key](https://dashboard.render.com/u/settings) (create from Account Settings). The Render API key must be a User account which is:
-  - An Admin in every Workspace that will be tracked
-  - An Owner of the Oranization (Enterprise Plan)
+- A Render API key for the Cron Job to read audit logs. We recommend an [audit log API key](https://render.com/docs/scoped-api-keys#audit-log-api-keys). It has read-only access to audit logs for your organization and all of its workspaces.
+  1. In the Render Dashboard, open the workspace dropdown and select your organization.
+  2. Go to **Settings** > **Logs** and, under **Audit Log API Keys**, click **Create API key**.
+  3. Copy the key.
+
+  Alternatively, use a classic [Render API key](https://dashboard.render.com/u/settings) from a user who is an Admin in every tracked workspace and, for organization-level audit logs, an Owner of the Organization.
+- A separate [Render API key](https://dashboard.render.com/u/settings) for the Terraform provider, which needs permission to create the Project and Cron Job. You only need this key while running `terraform apply`.
 - Render Owner ID (`tea-xxx`) — workspace where the Cron Job will be deployed
 - [Terraform](https://www.terraform.io/downloads) >= 1.0
 - AWS account with permissions to create S3 buckets and IAM roles
@@ -51,6 +55,9 @@ export AWS_SECRET_ACCESS_KEY=...
 # Render - both are required for the Terraform provider
 export RENDER_API_KEY=your-render-api-key
 export RENDER_OWNER_ID=tea-xxxxx
+
+# Audit log API key used by the Cron Job at runtime
+export RENDER_AUDIT_LOG_API_KEY=your-audit-log-api-key
 ```
 
 ### 3. Deploy with Terraform
@@ -59,7 +66,7 @@ export RENDER_OWNER_ID=tea-xxxxx
 terraform init
 terraform apply \
   -var="aws_s3_bucket_name=your-audit-logs-bucket" \
-  -var="render_api_key=${RENDER_API_KEY}" \
+  -var="render_api_key=${RENDER_AUDIT_LOG_API_KEY}" \
   -var='render_workspace_ids=["tea-xxxxx", "tea-yyyyy"]'
 ```
 
@@ -180,49 +187,6 @@ s3://your-bucket/
           └── month=1/
               └── day=15/
                   └── audit-logs-2024-01-15_10-30-00.json.gz
-```
-
-## Integration with Panther SIEM
-
-1. Create a custom log type in Panther with the schema below
-2. Add an S3 log source pointing to your audit-logs bucket
-3. Configure S3 event notifications to send object-create events to Panther
-
-Panther schema:
-
-```yaml
-fields:
-  - name: auditLog
-    required: true
-    type: object
-    fields:
-      - name: actor
-        type: object
-        fields:
-          - name: email
-            type: string
-            indicators:
-              - email
-          - name: id
-            type: string
-          - name: type
-            type: string
-      - name: event
-        type: string
-      - name: id
-        type: string
-      - name: metadata
-        type: json
-      - name: status
-        type: string
-      - name: timestamp
-        type: timestamp
-        isEventTime: true
-        timeFormats:
-          - rfc3339
-  - name: cursor
-    required: true
-    type: string
 ```
 
 ## Contributing
